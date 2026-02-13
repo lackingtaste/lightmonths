@@ -1,0 +1,643 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/index.html b/index.html
+index bed1cf3f256c57580dbacf9d0ff4972d622b510d..74883140fff65eb3ab113d40bec95cd240908e84 100644
+--- a/index.html
++++ b/index.html
+@@ -164,164 +164,173 @@
+         #tokenInfo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.95); color: white; padding: 30px; border-radius: 12px; z-index: 3000; max-width: 500px; text-align: center; display: none; }
+         #tokenInfo h2 { color: #FFD700; margin-bottom: 15px; }
+         #tokenInfo p { margin-bottom: 15px; line-height: 1.6; color: #ccc; }
+         #tokenInfo input { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; background: rgba(255,255,255,0.1); color: white; font-size: 1em; margin-bottom: 15px; }
+         #tokenInfo a { color: #FFD700; }
+         #errorBox { background: rgba(255, 100, 100, 0.2); border: 1px solid #ff6b6b; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
+ 
+         #installBanner {
+             display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+             background: rgba(0, 0, 0, 0.95); color: white; padding: 15px 25px;
+             border-radius: 12px; z-index: 2500; text-align: center;
+             box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(10px);
+         }
+         #installBanner p { margin-bottom: 10px; font-size: 0.9em; }
+         #installBanner .btn { margin: 5px; }
+ 
+         @media (max-width: 768px) {
+             #controlPanel { left: 10px; top: 10px; min-width: 280px; padding: 15px; }
+             #venueList { right: 10px; top: 10px; width: 280px; }
+             #legend { left: 10px; bottom: 10px; padding: 10px 15px; }
+         }
+     </style>
+ </head>
+ <body>
+     <div id="cesiumContainer"></div>
++    <div id="sunOverlay" aria-hidden="true">
++        <div id="sunDisc"></div>
++    </div>
+ 
+     <div id="loadingOverlay">
+         <div class="loader"></div>
+         <p id="loadingText">Loading Lightmonths...</p>
+     </div>
+ 
+     <div id="tokenInfo">
+         <h2>🔑 Cesium Ion Token Required</h2>
+         <p>To display 3D buildings and terrain, you need a free Cesium ion access token.</p>
+         <p>1. Go to <a href="https://ion.cesium.com/tokens" target="_blank">ion.cesium.com/tokens</a><br>2. Create a free account<br>3. Copy your default access token</p>
+         <input type="text" id="tokenInput" placeholder="Paste your Cesium ion token here...">
+         <button class="btn btn-primary" onclick="saveToken()">Save & Load Map</button>
+         <p style="font-size: 0.8em; margin-top: 15px;">Your token will be saved for future visits.</p>
+         <div id="errorBox"></div>
+     </div>
+ 
+     <div id="controlPanel" style="display: none;">
+         <h1>☀️ Lightmonths</h1>
+         <p class="subtitle">Find sunny outdoor spots in real-time</p>
+         <div class="control-group">
+             <label>Time of Day</label>
+             <input type="range" id="timeSlider" min="5" max="21" step="0.25" value="12">
+             <div id="currentTime">12:00 PM</div>
+             <div id="currentDate">Today</div>
+         </div>
+         <div class="control-group">
+             <button class="btn btn-primary" onclick="setCurrentTime()">Now</button>
+             <button class="btn btn-secondary" onclick="setTime(8)">Morning</button>
+             <button class="btn btn-secondary" onclick="setTime(12)">Noon</button>
+             <button class="btn btn-secondary" onclick="setTime(17)">Evening</button>
+         </div>
+         <div class="control-group">
+             <label>Quick Filters</label>
+             <button class="btn btn-filter" id="sunnyNowBtn" onclick="toggleSunnyFilter()">☀️ Sunny Now</button>
+             <button class="btn btn-gps" id="nearMeBtn" onclick="toggleNearMe()">📍 Near Me</button>
+         </div>
+         <div class="control-group">
+             <label>Animation</label>
+             <button class="btn btn-secondary" id="playBtn" onclick="toggleAnimation()">▶ Play Day</button>
+         </div>
+         <div id="statsPanel">
+             <div class="stat"><span class="stat-label">Sunny venues:</span><span class="stat-value sunny" id="sunnyCount">0</span></div>
+             <div class="stat"><span class="stat-label">Shaded venues:</span><span class="stat-value shaded" id="shadedCount">0</span></div>
+             <div class="stat" id="distanceStat" style="display: none;"><span class="stat-label">Nearest sunny:</span><span class="stat-value" id="nearestDistance" style="color: #66b3ff;">--</span></div>
+         </div>
++        <div id="weatherPanel">
++            <div class="weather-title">Live Weather</div>
++            <div id="weatherNow">Loading Melbourne weather…</div>
++            <div id="weatherForecast"></div>
++        </div>
+     </div>
+ 
+     <div id="venueList" style="display: none;">
+         <div class="venue-header" onclick="toggleVenueList()">
+             <span class="venue-header-title">📍 Bars & Restaurants</span>
+             <button class="toggle-btn">◀</button>
+         </div>
+         <div class="filter-info" id="filterInfo">Showing sunny venues only</div>
+         <div id="venues"></div>
+     </div>
+ 
+     <div id="legend" style="display: none;">
+         <h3>LEGEND</h3>
+-        <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot with light beam</span></div>
++        <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot</span></div>
+         <div class="legend-item"><div class="legend-color shaded"></div><span>Currently shaded</span></div>
+         <div style="margin-top: 10px; font-size: 0.8em; color: #888;">
+-            ✨ Golden beams show sunlight<br>
+-            🔆 Brighter = stronger sun
++            ☀️ City-wide sun glow shows time of day<br>
++            🔆 Brighter glow = stronger sun
+         </div>
+         <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+             <h3 style="margin-bottom: 8px;">MAP CONTROLS</h3>
+             <div style="font-size: 0.8em; color: #888; line-height: 1.6;">🖱️ <b>Left drag</b> - Pan<br>🖱️ <b>Right drag</b> - Rotate<br>🖱️ <b>Scroll</b> - Zoom<br>🖱️ <b>Middle drag</b> - Tilt</div>
+         </div>
+     </div>
+ 
+     <div id="venueModal">
+         <div class="modal-content">
+             <div class="modal-header">
+                 <div><h2 id="modalVenueName">Venue Name</h2><div class="venue-meta" id="modalVenueType">Type</div></div>
+                 <button class="modal-close" onclick="closeModal()">×</button>
+             </div>
+             <div class="modal-body">
+                 <div class="modal-section"><h3>📍 Location</h3><div class="venue-address" id="modalAddress">Address</div><div class="venue-description" id="modalDescription">Description</div></div>
+                 <div class="modal-section"><h3>🕐 Opening Hours</h3><div id="modalHours" style="color: #ccc; font-size: 0.9em;">Hours not available</div></div>
+                 <div class="modal-section"><h3>🔗 Website</h3><a href="#" id="modalWebsite" target="_blank" style="color: #FFD700; text-decoration: none; font-size: 0.9em;">Visit website →</a></div>
+                 <div class="modal-section"><h3>📸 Your Photos</h3><div class="photo-gallery" id="photoGallery"></div><input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhotoUpload(event)"></div>
+             </div>
+         </div>
+     </div>
+ 
+     <div id="installBanner">
+         <p>📱 Add Lightmonths to your home screen for quick access!</p>
+         <button class="btn btn-primary" id="installBtn">Install App</button>
+         <button class="btn btn-secondary" onclick="dismissInstall()">Maybe Later</button>
+     </div>
+ 
+     <script>
+         const venues = [
+             { name: "Her", type: "Rooftop Bar", lat: -37.8118, lng: 144.9647, height: 20, address: "270 Lonsdale St, Melbourne", description: "Multi-level venue with rooftop bar in CBD", outdoorType: "rooftop", website: "https://her.melbourne/", hours: "Mon-Wed 11:30am-1am, Thu 11:30am-2am, Fri-Sat 11:30am-3am, Sun 11:30am-2am" },
+             { name: "Rooftop Bar", type: "Rooftop Bar", lat: -37.8130, lng: 144.9650, height: 25, address: "Level 7, 252 Swanston St, Melbourne", description: "Melbourne's original rooftop bar at Curtin House since 2006", outdoorType: "rooftop", website: "https://www.rooftopbar.co/", hours: "Mon-Thu & Sun 12pm-1am, Fri-Sat 12pm-3am" },
+             { name: "Naked for Satan", type: "Rooftop Bar", lat: -37.7987, lng: 144.9783, height: 15, address: "285 Brunswick St, Fitzroy", description: "Famous Fitzroy rooftop bar with pintxos", outdoorType: "rooftop", website: "https://nakedforsatan.com.au/", hours: "Sun-Thu 12pm-12am, Fri-Sat 12pm-1am" },
+             { name: "Caretaker's Cottage", type: "Cocktail Bar", lat: -37.8107, lng: 144.9664, height: 2, address: "139-141 Little Lonsdale St, Melbourne", description: "World's 50 Best Bars - hidden behind Wesley Church", outdoorType: "courtyard", website: "https://www.caretakerscottage.bar/", hours: "Walk-ins only - check website" },
+             { name: "Kirk's Wine Bar", type: "Wine Bar", lat: -37.8125, lng: 144.9612, height: 2, address: "46 Hardware Lane, Melbourne", description: "Natural wine bar on Hardware Lane", outdoorType: "laneway", website: "https://www.kirkswinebar.com/", hours: "Mon-Sat 12pm-late" },
+             { name: "Marion", type: "Wine Bar", lat: -37.8062, lng: 144.9705, height: 2, address: "53 Gertrude St, Fitzroy", description: "Andrew McConnell's neighbourhood wine bar", outdoorType: "courtyard", website: "https://www.marionwine.com.au/", hours: "Tue-Sat 12pm-11pm, Sun 12pm-10pm" },
+             { name: "Siglo", type: "Rooftop Bar", lat: -37.8110, lng: 144.9724, height: 18, address: "Level 2, 161 Spring St, Melbourne", description: "Elegant rooftop terrace above Melbourne Supper Club", outdoorType: "rooftop", website: "https://siglobar.com.au/", hours: "Mon-Sat 5pm-3am" },
+             { name: "Great Northern Hotel", type: "Beer Garden", lat: -37.7745, lng: 144.9700, height: 2, address: "644 Rathdowne St, Carlton North", description: "Historic 1883 pub with Melbourne's largest beer garden", outdoorType: "garden", website: "https://www.gnh.net.au/", hours: "Sun-Wed 11am-11pm, Thu-Sat 11am-1am" },
+             { name: "Whitehart", type: "Container Bar", lat: -37.8127, lng: 144.9605, height: 12, address: "22 Whitehart Lane, Melbourne", description: "Industrial laneway bar with rooftop section", outdoorType: "rooftop", website: "https://www.whitehartbar.com.au/", hours: "Sun-Wed 12pm-11pm, Thu 12pm-12am, Fri-Sat 12pm-1am" },
+             { name: "Runner Up", type: "Rooftop Bar", lat: -37.8035, lng: 144.9875, height: 15, address: "35 Johnston St, Collingwood Yards", description: "Rooftop with 270-degree views of inner north", outdoorType: "rooftop", website: "https://runnerup.net.au/", hours: "Wed-Thu 5pm-11pm, Fri 4pm-1am, Sat 1pm-1am, Sun 2pm-10pm" },
+             { name: "Slowpoke", type: "Cafe & Courtyard", lat: -37.8022, lng: 144.9780, height: 2, address: "157 Brunswick St, Fitzroy", description: "Fitzroy cafe with secluded courtyard", outdoorType: "courtyard", website: "https://www.slow-poke.com/", hours: "Tue-Fri 7am-3:30pm, Sat-Sun 8am-3:30pm" },
+             { name: "Harvie", type: "Rooftop Bar", lat: -37.8555, lng: 145.0195, height: 12, address: "109 Wattletree Rd, Armadale", description: "Art Deco wine bar with rooftop sunset views", outdoorType: "rooftop", website: "https://www.harvie.bar/", hours: "Tue-Thu 3pm-10pm, Fri-Sun 1pm-10pm" },
+             { name: "Johnny's Green Room", type: "Rooftop Bar", lat: -37.7990, lng: 144.9665, height: 15, address: "Level 2, 293-297 Lygon St, Carlton", description: "Rooftop above King & Godfree with retro Italian vibes", outdoorType: "rooftop", website: "https://johnnysgreenroom.com/", hours: "Sun-Thu 12pm-11pm, Fri-Sat 12pm-12am" },
+             { name: "Good Heavens", type: "Rooftop Bar", lat: -37.8122, lng: 144.9697, height: 18, address: "Level 2, 79 Bourke St, Melbourne", description: "Melbourne's largest rooftop bar", outdoorType: "rooftop", website: "https://www.goodheavens.com.au/", hours: "Mon-Wed & Sun 12pm-11pm, Thu-Sat 12pm-1am" }
+         ];
+ 
+         let viewer = null, venueEntities = [], isPlaying = false, animationInterval = null, currentTimeHours = 12;
+         let sunnyFilterActive = false, nearMeActive = false, userLocation = null;
+-        let sunBeamEntities = []; // Store sun beam effects
++        let sunBeamEntities = []; // Kept for compatibility with older state
+         let glowAnimationFrame = null;
+         const GOOGLE_MAPS_API_KEY = 'AIzaSyDDXTr49B5gTQ3oBdFssu7dRUrprfA0jbc';
++        const MELBOURNE_COORDS = { lat: -37.8136, lng: 144.9631 };
+ 
+         // PWA Install prompt
+         let deferredPrompt = null;
+         window.addEventListener('beforeinstallprompt', (e) => {
+             e.preventDefault();
+             deferredPrompt = e;
+             // Show install banner after a delay if not dismissed
+             if (!localStorage.getItem('installDismissed')) {
+                 setTimeout(() => {
+                     document.getElementById('installBanner').style.display = 'block';
+                 }, 5000);
+             }
+         });
+ 
+         function dismissInstall() {
+             document.getElementById('installBanner').style.display = 'none';
+             localStorage.setItem('installDismissed', 'true');
+         }
+ 
+         document.getElementById('installBtn').addEventListener('click', async () => {
+             if (deferredPrompt) {
+                 deferredPrompt.prompt();
+                 const { outcome } = await deferredPrompt.userChoice;
+                 deferredPrompt = null;
+                 document.getElementById('installBanner').style.display = 'none';
+@@ -379,220 +388,161 @@
+                 viewer.shadowMap.enabled = true;
+                 viewer.shadowMap.softShadows = true;
+ 
+                 updateLoadingText('Loading terrain...');
+                 try { viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromIonAssetId(1); } catch(e) {}
+ 
+                 updateLoadingText('Loading 3D buildings...');
+                 if (GOOGLE_MAPS_API_KEY) {
+                     try {
+                         const gt = await Cesium.Cesium3DTileset.fromUrl('https://tile.googleapis.com/v1/3dtiles/root.json?key='+GOOGLE_MAPS_API_KEY);
+                         viewer.scene.primitives.add(gt);
+                     } catch(e) { try { viewer.scene.primitives.add(await Cesium.createOsmBuildingsAsync()); } catch(e2) {} }
+                 } else {
+                     try { viewer.scene.primitives.add(await Cesium.createOsmBuildingsAsync()); } catch(e) {}
+                 }
+ 
+                 updateLoadingText('Flying to Melbourne...');
+                 viewer.camera.setView({
+                     destination: Cesium.Cartesian3.fromDegrees(144.9631, -37.8136, 1500),
+                     orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 }
+                 });
+ 
+                 updateLoadingText('Adding venues...');
+                 addVenueMarkers();
+                 setCurrentTime();
++                initWeatherForecast();
++                setInterval(initWeatherForecast, 10 * 60 * 1000);
+                 document.getElementById('timeSlider').addEventListener('input', e => setTime(parseFloat(e.target.value)));
+ 
+                 document.getElementById('loadingOverlay').style.display = 'none';
+                 document.getElementById('controlPanel').style.display = 'block';
+                 document.getElementById('venueList').style.display = 'block';
+                 document.getElementById('legend').style.display = 'block';
+                 setInterval(updateVenueSunStatus, 1000);
+             } catch (error) { showError(error.message || 'Failed to load map'); }
+         }
+ 
+         function addVenueMarkers() {
+             const vc = document.getElementById('venues');
+             vc.innerHTML = '';
+             venues.forEach((v, i) => {
+                 // Main venue marker
+                 const entity = viewer.entities.add({
+                     name: v.name, position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
+                     point: { pixelSize: 14, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                     label: { text: v.name, font: '12px sans-serif', fillColor: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -20), heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY, scaleByDistance: new Cesium.NearFarScalar(100, 1.0, 5000, 0.3) }
+                 });
+ 
+-                // Sun beam - golden light cylinder from sky
+-                const sunBeam = viewer.entities.add({
+-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height + 75),
+-                    cylinder: {
+-                        length: 150,
+-                        topRadius: 8,
+-                        bottomRadius: 25,
+-                        material: Cesium.Color.GOLD.withAlpha(0.15),
+-                        outline: false,
+-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+-                    },
+-                    show: true
+-                });
+-
+-                // Ground glow - ellipse at venue level
+-                const groundGlow = viewer.entities.add({
+-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
+-                    ellipse: {
+-                        semiMajorAxis: 20,
+-                        semiMinorAxis: 20,
+-                        material: Cesium.Color.GOLD.withAlpha(0.25),
+-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+-                    },
+-                    show: true
+-                });
+-
+-                // Outer glow ring for pulsing effect
+-                const glowRing = viewer.entities.add({
+-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
+-                    ellipse: {
+-                        semiMajorAxis: 30,
+-                        semiMinorAxis: 30,
+-                        material: Cesium.Color.GOLD.withAlpha(0.1),
+-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+-                    },
+-                    show: true
+-                });
+-
+-                sunBeamEntities.push({ sunBeam, groundGlow, glowRing, venue: v });
+                 venueEntities.push({ entity, venue: v, isSunny: true, distance: null });
+ 
+                 const d = document.createElement('div');
+                 d.className = 'venue-item sunny'; d.id = 'venue-'+i;
+                 d.innerHTML = '<div class="venue-name">'+v.name+'</div><div class="venue-type">'+v.type+' • '+v.outdoorType+'</div><div class="venue-status"><span class="sun-icon">☀️</span><span class="status-text">Checking...</span></div><div class="venue-distance"></div>';
+                 d.onclick = () => { flyToVenue(i); openVenueModal(i); };
+                 vc.appendChild(d);
+             });
+ 
+-            // Start the glow animation
+-            startGlowAnimation();
+         }
+ 
+         // Animate the glow effect for sunny venues
+         function startGlowAnimation() {
+             let phase = 0;
+             function animate() {
+                 phase += 0.03;
+                 const pulse = 0.5 + 0.5 * Math.sin(phase); // 0 to 1 pulsing
+ 
+-                sunBeamEntities.forEach((item, i) => {
+-                    if (venueEntities[i] && venueEntities[i].isSunny) {
+-                        // Pulse the outer glow ring
+-                        if (item.glowRing?.ellipse) {
+-                            const size = 25 + 15 * pulse;
+-                            item.glowRing.ellipse.semiMajorAxis = size;
+-                            item.glowRing.ellipse.semiMinorAxis = size;
+-                            item.glowRing.ellipse.material = Cesium.Color.GOLD.withAlpha(0.08 + 0.07 * pulse);
+-                        }
+-                        // Pulse the sun beam opacity
+-                        if (item.sunBeam?.cylinder) {
+-                            item.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.1 * pulse);
+-                        }
+-                    }
+-                });
+-
+                 glowAnimationFrame = requestAnimationFrame(animate);
+             }
+             animate();
+         }
+ 
+         function flyToVenue(i) {
+             const v = venues[i];
+             viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, 300), orientation: { heading: 0, pitch: Cesium.Math.toRadians(-50), roll: 0 }, duration: 1.5 });
+         }
+ 
+         function updateVenueSunStatus() {
+             if (!viewer) return;
+             let sunny = 0, shaded = 0;
+             const h = currentTimeHours, sunUp = h >= 6 && h <= 20, high = h >= 10 && h <= 16, morn = h >= 6 && h < 10, eve = h > 16 && h <= 20;
+ 
+             // Calculate sun intensity based on time (peaks at noon)
+             let sunIntensity = 0;
+             if (sunUp) {
+                 if (high) sunIntensity = 1.0;
+                 else if (morn) sunIntensity = 0.3 + (h - 6) * 0.175; // 0.3 to 1.0 from 6am to 10am
+                 else if (eve) sunIntensity = 1.0 - (h - 16) * 0.175; // 1.0 to 0.3 from 4pm to 8pm
+             }
+ 
+             // Update atmosphere based on sun intensity
+             updateAtmosphere(h, sunIntensity);
+ 
+             venueEntities.forEach((item, i) => {
+                 const roof = item.venue.outdoorType === 'rooftop', elev = item.venue.height > 10, water = item.venue.outdoorType === 'waterfront', lane = item.venue.outdoorType === 'laneway';
+                 let prob = 0;
+                 if (sunUp) {
+                     if (high) prob = roof ? 0.98 : water ? 0.90 : elev ? 0.85 : lane ? 0.40 : 0.70;
+                     else if (morn) prob = roof ? 0.85 : water ? 0.75 : elev ? 0.65 : lane ? 0.20 : 0.50;
+                     else if (eve) prob = roof ? 0.80 : water ? 0.70 : elev ? 0.60 : lane ? 0.15 : 0.45;
+                 }
+                 const rand = Math.abs((Math.sin(i * 12.9898 + 43758.5453) * 43758.5453) % 1);
+                 item.isSunny = prob > rand && sunUp;
+ 
+                 // Update marker color
+-                if (item.entity?.point) item.entity.point.color = item.isSunny ? Cesium.Color.GOLD : Cesium.Color.GRAY;
+-
+-                // Update sun beam visibility and intensity
+-                if (sunBeamEntities[i]) {
+-                    const beamData = sunBeamEntities[i];
+-                    const showEffects = item.isSunny && sunUp;
+-
+-                    beamData.sunBeam.show = showEffects;
+-                    beamData.groundGlow.show = showEffects;
+-                    beamData.glowRing.show = showEffects;
+-
+-                    // Adjust beam intensity based on sun position
+-                    if (showEffects && beamData.sunBeam.cylinder) {
+-                        beamData.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.15 * sunIntensity);
+-                    }
+-                    if (showEffects && beamData.groundGlow.ellipse) {
+-                        beamData.groundGlow.ellipse.material = Cesium.Color.GOLD.withAlpha(0.15 + 0.2 * sunIntensity);
+-                    }
+-                }
++                if (item.entity?.point) item.entity.point.color = item.isSunny ? Cesium.Color.fromCssColorString('#111111') : Cesium.Color.fromCssColorString('#8f8f8f');
+ 
+                 const d = document.getElementById('venue-'+i);
+                 if (d) {
+                     const wasHidden = d.classList.contains('hidden');
+                     d.className = 'venue-item ' + (item.isSunny ? 'sunny' : 'shaded');
+                     // Apply filters
+                     if (sunnyFilterActive && !item.isSunny) d.classList.add('hidden');
+                     d.querySelector('.sun-icon').textContent = item.isSunny ? '☀️' : sunUp ? '🌥️' : '🌙';
+                     d.querySelector('.status-text').textContent = item.isSunny ? 'Currently sunny' : sunUp ? 'Currently shaded' : 'After dark';
+                 }
+                 item.isSunny ? sunny++ : shaded++;
+             });
+             document.getElementById('sunnyCount').textContent = sunny;
+             document.getElementById('shadedCount').textContent = shaded;
++            updateSunGraphicPosition(h, sunIntensity);
+             updateNearestSunny();
+         }
+ 
++        function updateSunGraphicPosition(hour, intensity) {
++            const disc = document.getElementById('sunDisc');
++            if (!disc) return;
++            const dayProgress = Math.max(0, Math.min(1, (hour - 6) / 14));
++            const x = 8 + (dayProgress * 84);
++            const yArc = Math.sin(dayProgress * Math.PI);
++            const y = 72 - (yArc * 52);
++            const opacity = hour >= 6 && hour <= 20 ? (0.25 + intensity * 0.55) : 0.08;
++            disc.style.left = x + '%';
++            disc.style.top = y + '%';
++            disc.style.opacity = opacity.toFixed(2);
++        }
++
+         // Update atmosphere/sky based on time of day
+         function updateAtmosphere(hour, intensity) {
+             if (!viewer || !viewer.scene) return;
+ 
+             // Adjust scene lighting intensity
+             const scene = viewer.scene;
+ 
+             // Morning/evening: warmer colors, midday: brighter
+             if (hour >= 6 && hour < 8) {
+                 // Golden hour morning
+                 scene.globe.atmosphereLightIntensity = 8 + intensity * 4;
+             } else if (hour >= 8 && hour < 17) {
+                 // Bright day
+                 scene.globe.atmosphereLightIntensity = 10 + intensity * 5;
+             } else if (hour >= 17 && hour <= 20) {
+                 // Golden hour evening
+                 scene.globe.atmosphereLightIntensity = 8 + intensity * 4;
+             } else {
+                 // Night
+                 scene.globe.atmosphereLightIntensity = 3;
+             }
+         }
+ 
+         // SUNNY NOW FILTER
+         function toggleSunnyFilter() {
+@@ -730,65 +680,53 @@
+         function updateNearestSunny() {
+             if (!nearMeActive || !userLocation) return;
+             const sunnyVenues = venueEntities.filter(v => v.isSunny && v.distance !== null);
+             if (sunnyVenues.length > 0) {
+                 sunnyVenues.sort((a, b) => a.distance - b.distance);
+                 const nearest = sunnyVenues[0].distance;
+                 document.getElementById('nearestDistance').textContent = nearest < 1
+                     ? Math.round(nearest * 1000) + 'm'
+                     : nearest.toFixed(1) + 'km';
+             } else {
+                 document.getElementById('nearestDistance').textContent = 'None nearby';
+             }
+         }
+ 
+         function applyFilters() {
+             venueEntities.forEach((item, i) => {
+                 const el = document.getElementById('venue-' + i);
+                 if (!el) return;
+ 
+                 let shouldHide = false;
+                 if (sunnyFilterActive && !item.isSunny) shouldHide = true;
+ 
+                 if (shouldHide) {
+                     el.classList.add('hidden');
+                     if (item.entity) item.entity.show = false;
+-                    // Hide sun effects too
+-                    if (sunBeamEntities[i]) {
+-                        sunBeamEntities[i].sunBeam.show = false;
+-                        sunBeamEntities[i].groundGlow.show = false;
+-                        sunBeamEntities[i].glowRing.show = false;
+-                    }
+                 } else {
+                     el.classList.remove('hidden');
+                     if (item.entity) item.entity.show = true;
+-                    // Show sun effects if venue is sunny
+-                    if (sunBeamEntities[i] && item.isSunny) {
+-                        sunBeamEntities[i].sunBeam.show = true;
+-                        sunBeamEntities[i].groundGlow.show = true;
+-                        sunBeamEntities[i].glowRing.show = true;
+-                    }
+                 }
+             });
+ 
+             // Update filter info text
+             const filterInfo = document.getElementById('filterInfo');
+             if (sunnyFilterActive && nearMeActive) {
+                 filterInfo.textContent = '☀️📍 Sunny venues sorted by distance';
+                 filterInfo.classList.add('active');
+             } else if (sunnyFilterActive) {
+                 filterInfo.textContent = '☀️ Showing sunny venues only';
+                 filterInfo.classList.add('active');
+             } else if (nearMeActive) {
+                 filterInfo.textContent = '📍 Venues sorted by distance';
+                 filterInfo.classList.add('active');
+             } else {
+                 filterInfo.classList.remove('active');
+             }
+         }
+ 
+         function setTime(h) {
+             if (!viewer) return;
+             currentTimeHours = h;
+             const now = new Date(), utcH = h - 11;
+             viewer.clock.currentTime = Cesium.JulianDate.fromDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcH, 0, 0)));
+             viewer.clock.shouldAnimate = false;
+@@ -867,29 +805,152 @@
+                 r.onload = function(ev) {
+                     const img = new Image();
+                     img.onload = function() {
+                         const c = document.createElement('canvas');
+                         let w = img.width, h = img.height;
+                         if (w > 400 || h > 400) { if (w > h) { h = (h/w)*400; w = 400; } else { w = (w/h)*400; h = 400; } }
+                         c.width = w; c.height = h;
+                         c.getContext('2d').drawImage(img, 0, 0, w, h);
+                         photos[currentVenueIndex].push(c.toDataURL('image/jpeg', 0.7));
+                         savePhotos(photos);
+                         loadVenuePhotos(currentVenueIndex);
+                     };
+                     img.src = ev.target.result;
+                 };
+                 r.readAsDataURL(f);
+             });
+             e.target.value = '';
+         }
+ 
+         function deletePhoto(vi, pi) {
+             if (!confirm('Delete photo?')) return;
+             const photos = getStoredPhotos();
+             if (photos[vi]) { photos[vi].splice(pi, 1); savePhotos(photos); loadVenuePhotos(vi); }
+         }
+ 
++        async function initWeatherForecast() {
++            const nowEl = document.getElementById('weatherNow');
++            const fcEl = document.getElementById('weatherForecast');
++            if (!nowEl || !fcEl) return;
++
++            const url = `https://api.open-meteo.com/v1/forecast?latitude=${MELBOURNE_COORDS.lat}&longitude=${MELBOURNE_COORDS.lng}&current=temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m&hourly=temperature_2m,precipitation_probability,cloud_cover&forecast_days=1&timezone=Australia%2FMelbourne`;
++
++            try {
++                const res = await fetch(url);
++                if (!res.ok) throw new Error('Weather API unavailable');
++                const data = await res.json();
++                const c = data.current;
++                nowEl.textContent = `${Math.round(c.temperature_2m)}°C • ${Math.round(c.cloud_cover)}% cloud • ${Math.round(c.wind_speed_10m)} km/h wind`;
++
++                const hours = data.hourly.time || [];
++                const temps = data.hourly.temperature_2m || [];
++                const rain = data.hourly.precipitation_probability || [];
++
++                const currentHour = new Date().getHours();
++                const slices = [];
++                for (let i = 0; i < hours.length; i++) {
++                    const hh = Number(hours[i].slice(11, 13));
++                    if (hh >= currentHour && slices.length < 4) {
++                        slices.push({ hh, temp: temps[i], rain: rain[i] });
++                    }
++                }
++
++                fcEl.innerHTML = slices.map(s => {
++                    const label = s.hh === 12 ? '12pm' : (s.hh > 12 ? `${s.hh - 12}pm` : `${s.hh}am`);
++                    return `<span class="wx-chip"><b>${label}</b> ${Math.round(s.temp)}° ${Math.round(s.rain)}% rain</span>`;
++                }).join('');
++            } catch (e) {
++                nowEl.textContent = 'Unable to load live weather right now.';
++                fcEl.innerHTML = '<span class="wx-chip">Check connection and refresh.</span>';
++            }
++        }
++
+         window.onload = init;
+     </script>
++
++    <style>
++        #sunOverlay {
++            position: absolute;
++            inset: 0;
++            pointer-events: none;
++            z-index: 50;
++            overflow: hidden;
++        }
++
++        #sunDisc {
++            position: absolute;
++            width: 360px;
++            height: 360px;
++            border-radius: 50%;
++            transform: translate(-50%, -50%);
++            background: radial-gradient(circle, rgba(255,213,110,0.45) 0%, rgba(255,213,110,0.18) 35%, rgba(255,213,110,0.08) 58%, rgba(255,213,110,0) 72%);
++            filter: blur(4px);
++            transition: top 0.6s ease, left 0.6s ease, opacity 0.6s ease;
++        }
++
++        #controlPanel,
++        #venueList,
++        #legend,
++        #venueModal .modal-content,
++        #installBanner {
++            background: rgba(255, 255, 255, 0.94) !important;
++            color: #111 !important;
++            border: 1px solid rgba(0, 0, 0, 0.08);
++            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.12);
++            backdrop-filter: blur(8px);
++        }
++
++        #controlPanel h1,
++        .venue-header-title,
++        #legend h3,
++        .stat-value.sunny,
++        #weatherPanel .weather-title { color: #111 !important; }
++
++        #controlPanel .subtitle,
++        .stat-label,
++        .venue-type,
++        .venue-meta,
++        #currentDate,
++        #weatherNow { color: #444 !important; }
++
++        .btn-primary {
++            background: #111 !important;
++            color: #fff !important;
++        }
++        .btn-secondary,
++        .btn-filter,
++        .btn-gps {
++            background: #fff !important;
++            color: #111 !important;
++            border: 1px solid rgba(0,0,0,0.2) !important;
++        }
++        .btn-secondary.active,
++        .btn-filter.active,
++        .btn-gps.active {
++            background: #111 !important;
++            color: #fff !important;
++            border-color: #111 !important;
++        }
++
++        .venue-item { border-left-color: #d6d6d6 !important; }
++        .venue-item.sunny { border-left-color: #111 !important; background: rgba(0,0,0,0.04) !important; }
++        .venue-item.shaded { background: rgba(0,0,0,0.02) !important; }
++        .filter-info.active { background: rgba(0,0,0,0.06) !important; color: #111 !important; }
++
++        #weatherPanel {
++            margin-top: 14px;
++            padding-top: 14px;
++            border-top: 1px solid rgba(0,0,0,0.12);
++        }
++        #weatherNow { font-size: 0.88em; margin-bottom: 8px; }
++        #weatherForecast { display: flex; flex-wrap: wrap; gap: 6px; }
++        .wx-chip {
++            font-size: 0.76em;
++            background: rgba(0,0,0,0.05);
++            border: 1px solid rgba(0,0,0,0.1);
++            border-radius: 999px;
++            padding: 4px 8px;
++            color: #222;
++        }
++    </style>
+ </body>
+ </html>
+ 
+EOF
+)

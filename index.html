@@ -244,8 +244,12 @@
 
     <div id="legend" style="display: none;">
         <h3>LEGEND</h3>
-        <div class="legend-item"><div class="legend-color sunny"></div><span>Currently in sun</span></div>
+        <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot with light beam</span></div>
         <div class="legend-item"><div class="legend-color shaded"></div><span>Currently shaded</span></div>
+        <div style="margin-top: 10px; font-size: 0.8em; color: #888;">
+            ✨ Golden beams show sunlight<br>
+            🔆 Brighter = stronger sun
+        </div>
         <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
             <h3 style="margin-bottom: 8px;">MAP CONTROLS</h3>
             <div style="font-size: 0.8em; color: #888; line-height: 1.6;">🖱️ <b>Left drag</b> - Pan<br>🖱️ <b>Right drag</b> - Rotate<br>🖱️ <b>Scroll</b> - Zoom<br>🖱️ <b>Middle drag</b> - Tilt</div>
@@ -293,6 +297,8 @@
 
         let viewer = null, venueEntities = [], isPlaying = false, animationInterval = null, currentTimeHours = 12;
         let sunnyFilterActive = false, nearMeActive = false, userLocation = null;
+        let sunBeamEntities = []; // Store sun beam effects
+        let glowAnimationFrame = null;
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDDXTr49B5gTQ3oBdFssu7dRUrprfA0jbc';
 
         // PWA Install prompt
@@ -409,18 +415,91 @@
             const vc = document.getElementById('venues');
             vc.innerHTML = '';
             venues.forEach((v, i) => {
+                // Main venue marker
                 const entity = viewer.entities.add({
                     name: v.name, position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
                     point: { pixelSize: 14, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY },
                     label: { text: v.name, font: '12px sans-serif', fillColor: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -20), heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY, scaleByDistance: new Cesium.NearFarScalar(100, 1.0, 5000, 0.3) }
                 });
+
+                // Sun beam - golden light cylinder from sky
+                const sunBeam = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height + 75),
+                    cylinder: {
+                        length: 150,
+                        topRadius: 8,
+                        bottomRadius: 25,
+                        material: Cesium.Color.GOLD.withAlpha(0.15),
+                        outline: false,
+                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+                    },
+                    show: true
+                });
+
+                // Ground glow - ellipse at venue level
+                const groundGlow = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
+                    ellipse: {
+                        semiMajorAxis: 20,
+                        semiMinorAxis: 20,
+                        material: Cesium.Color.GOLD.withAlpha(0.25),
+                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+                    },
+                    show: true
+                });
+
+                // Outer glow ring for pulsing effect
+                const glowRing = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
+                    ellipse: {
+                        semiMajorAxis: 30,
+                        semiMinorAxis: 30,
+                        material: Cesium.Color.GOLD.withAlpha(0.1),
+                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+                    },
+                    show: true
+                });
+
+                sunBeamEntities.push({ sunBeam, groundGlow, glowRing, venue: v });
                 venueEntities.push({ entity, venue: v, isSunny: true, distance: null });
+
                 const d = document.createElement('div');
                 d.className = 'venue-item sunny'; d.id = 'venue-'+i;
                 d.innerHTML = '<div class="venue-name">'+v.name+'</div><div class="venue-type">'+v.type+' • '+v.outdoorType+'</div><div class="venue-status"><span class="sun-icon">☀️</span><span class="status-text">Checking...</span></div><div class="venue-distance"></div>';
                 d.onclick = () => { flyToVenue(i); openVenueModal(i); };
                 vc.appendChild(d);
             });
+
+            // Start the glow animation
+            startGlowAnimation();
+        }
+
+        // Animate the glow effect for sunny venues
+        function startGlowAnimation() {
+            let phase = 0;
+            function animate() {
+                phase += 0.03;
+                const pulse = 0.5 + 0.5 * Math.sin(phase); // 0 to 1 pulsing
+
+                sunBeamEntities.forEach((item, i) => {
+                    if (venueEntities[i] && venueEntities[i].isSunny) {
+                        // Pulse the outer glow ring
+                        if (item.glowRing?.ellipse) {
+                            const size = 25 + 15 * pulse;
+                            item.glowRing.ellipse.semiMajorAxis = size;
+                            item.glowRing.ellipse.semiMinorAxis = size;
+                            item.glowRing.ellipse.material = Cesium.Color.GOLD.withAlpha(0.08 + 0.07 * pulse);
+                        }
+                        // Pulse the sun beam opacity
+                        if (item.sunBeam?.cylinder) {
+                            item.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.1 * pulse);
+                        }
+                    }
+                });
+
+                glowAnimationFrame = requestAnimationFrame(animate);
+            }
+            animate();
         }
 
         function flyToVenue(i) {
@@ -432,6 +511,18 @@
             if (!viewer) return;
             let sunny = 0, shaded = 0;
             const h = currentTimeHours, sunUp = h >= 6 && h <= 20, high = h >= 10 && h <= 16, morn = h >= 6 && h < 10, eve = h > 16 && h <= 20;
+
+            // Calculate sun intensity based on time (peaks at noon)
+            let sunIntensity = 0;
+            if (sunUp) {
+                if (high) sunIntensity = 1.0;
+                else if (morn) sunIntensity = 0.3 + (h - 6) * 0.175; // 0.3 to 1.0 from 6am to 10am
+                else if (eve) sunIntensity = 1.0 - (h - 16) * 0.175; // 1.0 to 0.3 from 4pm to 8pm
+            }
+
+            // Update atmosphere based on sun intensity
+            updateAtmosphere(h, sunIntensity);
+
             venueEntities.forEach((item, i) => {
                 const roof = item.venue.outdoorType === 'rooftop', elev = item.venue.height > 10, water = item.venue.outdoorType === 'waterfront', lane = item.venue.outdoorType === 'laneway';
                 let prob = 0;
@@ -442,7 +533,28 @@
                 }
                 const rand = Math.abs((Math.sin(i * 12.9898 + 43758.5453) * 43758.5453) % 1);
                 item.isSunny = prob > rand && sunUp;
+
+                // Update marker color
                 if (item.entity?.point) item.entity.point.color = item.isSunny ? Cesium.Color.GOLD : Cesium.Color.GRAY;
+
+                // Update sun beam visibility and intensity
+                if (sunBeamEntities[i]) {
+                    const beamData = sunBeamEntities[i];
+                    const showEffects = item.isSunny && sunUp;
+
+                    beamData.sunBeam.show = showEffects;
+                    beamData.groundGlow.show = showEffects;
+                    beamData.glowRing.show = showEffects;
+
+                    // Adjust beam intensity based on sun position
+                    if (showEffects && beamData.sunBeam.cylinder) {
+                        beamData.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.15 * sunIntensity);
+                    }
+                    if (showEffects && beamData.groundGlow.ellipse) {
+                        beamData.groundGlow.ellipse.material = Cesium.Color.GOLD.withAlpha(0.15 + 0.2 * sunIntensity);
+                    }
+                }
+
                 const d = document.getElementById('venue-'+i);
                 if (d) {
                     const wasHidden = d.classList.contains('hidden');
@@ -457,6 +569,29 @@
             document.getElementById('sunnyCount').textContent = sunny;
             document.getElementById('shadedCount').textContent = shaded;
             updateNearestSunny();
+        }
+
+        // Update atmosphere/sky based on time of day
+        function updateAtmosphere(hour, intensity) {
+            if (!viewer || !viewer.scene) return;
+
+            // Adjust scene lighting intensity
+            const scene = viewer.scene;
+
+            // Morning/evening: warmer colors, midday: brighter
+            if (hour >= 6 && hour < 8) {
+                // Golden hour morning
+                scene.globe.atmosphereLightIntensity = 8 + intensity * 4;
+            } else if (hour >= 8 && hour < 17) {
+                // Bright day
+                scene.globe.atmosphereLightIntensity = 10 + intensity * 5;
+            } else if (hour >= 17 && hour <= 20) {
+                // Golden hour evening
+                scene.globe.atmosphereLightIntensity = 8 + intensity * 4;
+            } else {
+                // Night
+                scene.globe.atmosphereLightIntensity = 3;
+            }
         }
 
         // SUNNY NOW FILTER
@@ -617,9 +752,21 @@
                 if (shouldHide) {
                     el.classList.add('hidden');
                     if (item.entity) item.entity.show = false;
+                    // Hide sun effects too
+                    if (sunBeamEntities[i]) {
+                        sunBeamEntities[i].sunBeam.show = false;
+                        sunBeamEntities[i].groundGlow.show = false;
+                        sunBeamEntities[i].glowRing.show = false;
+                    }
                 } else {
                     el.classList.remove('hidden');
                     if (item.entity) item.entity.show = true;
+                    // Show sun effects if venue is sunny
+                    if (sunBeamEntities[i] && item.isSunny) {
+                        sunBeamEntities[i].sunBeam.show = true;
+                        sunBeamEntities[i].groundGlow.show = true;
+                        sunBeamEntities[i].glowRing.show = true;
+                    }
                 }
             });
 

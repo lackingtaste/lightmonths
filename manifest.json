@@ -1,0 +1,28 @@
+{
+  "name": "Lightmonths",
+  "short_name": "Lightmonths",
+  "description": "Find sunny bars and restaurants in Melbourne with real-time 3D shadow mapping",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#FFD700",
+  "orientation": "any",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "navigation"],
+  "lang": "en-AU",
+  "dir": "ltr"
+}

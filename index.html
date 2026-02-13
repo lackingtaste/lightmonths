@@ -176,6 +176,121 @@
         }
         #installBanner p { margin-bottom: 10px; font-size: 0.9em; }
         #installBanner .btn { margin: 5px; }
+        /* Minimal light theme */
+
+        #controlPanel,
+        #venueList,
+        #legend,
+        #venueModal .modal-content,
+        #installBanner {
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #111 !important;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(8px);
+        }
+
+        #controlPanel h1,
+        .venue-header-title,
+        #legend h3,
+        .stat-value.sunny,
+        #weatherPanel .weather-title { color: #111 !important; }
+
+        #controlPanel .subtitle,
+        .stat-label,
+        .venue-type,
+        .venue-meta,
+        #currentDate,
+        #weatherNow { color: #444 !important; }
+
+        .btn-primary {
+            background: #111 !important;
+            color: #fff !important;
+        }
+        .btn-secondary,
+        .btn-filter,
+        .btn-gps {
+            background: #fff !important;
+            color: #111 !important;
+            border: 1px solid rgba(0,0,0,0.2) !important;
+        }
+        .btn-secondary.active,
+        .btn-filter.active,
+        .btn-gps.active {
+            background: #111 !important;
+            color: #fff !important;
+            border-color: #111 !important;
+        }
+
+        .venue-item { border-left-color: #d6d6d6 !important; }
+        .venue-item.sunny { border-left-color: #111 !important; background: rgba(0,0,0,0.04) !important; }
+        .venue-item.shaded { background: rgba(0,0,0,0.02) !important; }
+        .filter-info.active { background: rgba(0,0,0,0.06) !important; color: #111 !important; }
+
+        #weatherPanel {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0,0,0,0.12);
+        }
+        #weatherNow { font-size: 0.88em; margin-bottom: 8px; }
+        #weatherForecast { display: flex; flex-wrap: wrap; gap: 6px; }
+        .wx-chip {
+            font-size: 0.76em;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 999px;
+            padding: 4px 8px;
+            color: #222;
+        }
+
+
+        #controlPanel {
+            min-width: 260px !important;
+            width: 260px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom: 12px; }
+        .panel-collapse {
+            border: 1px solid rgba(0,0,0,0.18);
+            background: #fff;
+            color: #111;
+            width: 34px; height: 34px; border-radius: 999px; cursor: pointer;
+        }
+        #controlPanel.collapsed { width: 52px !important; min-width: 52px !important; padding: 12px 8px !important; overflow: hidden; }
+        #controlPanel.collapsed .panel-head > div,
+        #controlPanel.collapsed .control-group,
+        #controlPanel.collapsed #statsPanel,
+        #controlPanel.collapsed #weatherPanel { display:none; }
+        #controlPanel.collapsed .panel-collapse { transform: rotate(180deg); margin: 0 auto; display:block; }
+
+        #venueModal {
+            align-items: flex-end;
+            justify-content: flex-start;
+            padding: 20px;
+            background: transparent !important;
+            pointer-events: none;
+        }
+        #venueModal.active { display:flex; }
+        #venueModal .modal-content {
+            pointer-events: all;
+            width: 420px;
+            max-width: calc(100vw - 32px);
+            border-radius: 20px !important;
+            overflow: hidden;
+        }
+        .modal-header { padding: 12px 16px !important; }
+        .modal-header h2 { color: #111 !important; }
+        .modal-close { color: #444 !important; }
+        .modal-body { padding: 0 16px 16px !important; }
+        .modal-image-wrap { margin: 0 -16px 14px; height: 190px; overflow: hidden; background: #f2f2f2; }
+        .modal-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .sunny-pill { display:inline-block; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; background:#f4f4f4; margin-bottom:8px; }
+        .sunny-pill.sunny { background: #e8f7eb; color:#116329; }
+        .sunny-pill.shaded { background: #f1f1f1; color:#444; }
+        .modal-section h3 { color:#111 !important; text-transform:none !important; letter-spacing:0 !important; font-size: 1.2em !important; margin-bottom:6px !important; }
+        .modal-meta-row { display:flex; gap:8px; align-items:flex-start; color:#333; margin-top:8px; font-size:0.92em; }
+        #modalWebsite { color:#111 !important; text-decoration: underline; }
 
 
         /* Minimal light theme + city-wide sun overlay */
@@ -264,7 +379,7 @@
         }
 
         @media (max-width: 768px) {
-            #controlPanel { left: 10px; top: 10px; min-width: 280px; padding: 15px; }
+            #controlPanel { left: 10px; top: 10px; min-width: 230px; width: 230px; padding: 12px; }
             #venueList { right: 10px; top: 10px; width: 280px; }
             #legend { left: 10px; bottom: 10px; padding: 10px 15px; }
         }
@@ -292,8 +407,13 @@
     </div>
 
     <div id="controlPanel" style="display: none;">
-        <h1>☀️ Lightmonths</h1>
-        <p class="subtitle">Find sunny outdoor spots in real-time</p>
+        <div class="panel-head">
+            <div>
+                <h1>☀️ Lightmonths</h1>
+                <p class="subtitle">Find sunny outdoor spots</p>
+            </div>
+            <button class="panel-collapse" onclick="toggleControlPanel()" aria-label="Toggle controls">◀</button>
+        </div>
         <div class="control-group">
             <label>Time of Day</label>
             <input type="range" id="timeSlider" min="5" max="21" step="0.25" value="12">
@@ -357,9 +477,16 @@
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body">
-                <div class="modal-section"><h3>📍 Location</h3><div class="venue-address" id="modalAddress">Address</div><div class="venue-description" id="modalDescription">Description</div></div>
-                <div class="modal-section"><h3>🕐 Opening Hours</h3><div id="modalHours" style="color: #ccc; font-size: 0.9em;">Hours not available</div></div>
-                <div class="modal-section"><h3>🔗 Website</h3><a href="#" id="modalWebsite" target="_blank" style="color: #FFD700; text-decoration: none; font-size: 0.9em;">Visit website →</a></div>
+                <div class="modal-image-wrap"><img id="modalHeroImage" alt="Venue photo"></div>
+                <div class="modal-section">
+                    <div class="sunny-pill" id="modalSunState">Checking sunlight…</div>
+                    <h3 id="modalVenueTitle">Venue details</h3>
+                    <div class="venue-address" id="modalAddress">Address</div>
+                    <div class="venue-description" id="modalDescription">Description</div>
+                    <div class="modal-meta-row"><span>🕐</span><div id="modalHours">Hours not available</div></div>
+                    <div class="modal-meta-row"><span>☀️</span><div id="modalSunnyDuration">Calculating sunny window…</div></div>
+                    <div class="modal-meta-row"><span>🔗</span><a href="#" id="modalWebsite" target="_blank">Visit website</a></div>
+                </div>
                 <div class="modal-section"><h3>📸 Your Photos</h3><div class="photo-gallery" id="photoGallery"></div><input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhotoUpload(event)"></div>
             </div>
         </div>
@@ -829,19 +956,60 @@
         }
 
         function toggleVenueList() { document.getElementById('venueList').classList.toggle('collapsed'); }
+        function toggleControlPanel() { document.getElementById('controlPanel').classList.toggle('collapsed'); }
 
         let currentVenueIndex = null;
+
+        function isVenueSunnyAtHour(index, h) {
+            const venue = venues[index];
+            const sunUp = h >= 6 && h <= 20;
+            if (!sunUp) return false;
+            const high = h >= 10 && h <= 16, morn = h >= 6 && h < 10, eve = h > 16 && h <= 20;
+            const roof = venue.outdoorType === 'rooftop', elev = venue.height > 10, water = venue.outdoorType === 'waterfront', lane = venue.outdoorType === 'laneway';
+            let prob = 0;
+            if (high) prob = roof ? 0.98 : water ? 0.90 : elev ? 0.85 : lane ? 0.40 : 0.70;
+            else if (morn) prob = roof ? 0.85 : water ? 0.75 : elev ? 0.65 : lane ? 0.20 : 0.50;
+            else if (eve) prob = roof ? 0.80 : water ? 0.70 : elev ? 0.60 : lane ? 0.15 : 0.45;
+            const rand = Math.abs((Math.sin(index * 12.9898 + 43758.5453) * 43758.5453) % 1);
+            return prob > rand;
+        }
+
+        function getSunnyDurationText(index) {
+            const nowSunny = isVenueSunnyAtHour(index, currentTimeHours);
+            if (!nowSunny) return 'Currently shaded at this time.';
+            let slots = 0;
+            for (let h = currentTimeHours; h <= 21; h += 0.25) {
+                if (isVenueSunnyAtHour(index, h)) slots++;
+                else break;
+            }
+            const mins = Math.round(slots * 15);
+            const hours = Math.floor(mins / 60);
+            const rem = mins % 60;
+            if (hours === 0) return `Sunny for about ${rem} more min`;
+            if (rem === 0) return `Sunny for about ${hours}h more`;
+            return `Sunny for about ${hours}h ${rem}m more`;
+        }
+
         function openVenueModal(i) {
             currentVenueIndex = i;
             const v = venues[i];
             document.getElementById('modalVenueName').textContent = v.name;
             document.getElementById('modalVenueType').textContent = v.type + ' • ' + v.outdoorType;
+            document.getElementById('modalVenueTitle').textContent = v.name;
             document.getElementById('modalAddress').textContent = v.address || 'Address not available';
             document.getElementById('modalDescription').textContent = v.description;
             document.getElementById('modalHours').textContent = v.hours || 'Hours not available';
+            document.getElementById('modalSunnyDuration').textContent = getSunnyDurationText(i);
+            const stateEl = document.getElementById('modalSunState');
+            const currentlySunny = isVenueSunnyAtHour(i, currentTimeHours);
+            stateEl.className = 'sunny-pill ' + (currentlySunny ? 'sunny' : 'shaded');
+            stateEl.textContent = currentlySunny ? 'Currently Sunny' : 'Currently Shaded';
             const ws = document.getElementById('modalWebsite');
-            if (v.website) { ws.href = v.website; ws.textContent = v.website.replace('https://','').replace('www.','').replace(/\/$/,'') + ' →'; ws.style.display = 'inline'; }
+            if (v.website) { ws.href = v.website; ws.textContent = v.website.replace('https://','').replace('www.','').replace(/\/$/,''); ws.style.display = 'inline'; }
             else ws.style.display = 'none';
+            const photos = getStoredPhotos();
+            const hero = document.getElementById('modalHeroImage');
+            hero.src = photos[i]?.[0] || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f7f7f7"/><stop offset="1" stop-color="#ececec"/></linearGradient></defs><rect width="800" height="420" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#777" font-family="sans-serif" font-size="34">${v.name}</text></svg>`);
             loadVenuePhotos(i);
             document.getElementById('venueModal').classList.add('active');
         }

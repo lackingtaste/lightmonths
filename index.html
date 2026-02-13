@@ -176,9 +176,124 @@
         }
         #installBanner p { margin-bottom: 10px; font-size: 0.9em; }
         #installBanner .btn { margin: 5px; }
+        /* Minimal light theme */
+
+        #controlPanel,
+        #venueList,
+        #legend,
+        #venueModal .modal-content,
+        #installBanner {
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #111 !important;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(8px);
+        }
+
+        #controlPanel h1,
+        .venue-header-title,
+        #legend h3,
+        .stat-value.sunny,
+        #weatherPanel .weather-title { color: #111 !important; }
+
+        #controlPanel .subtitle,
+        .stat-label,
+        .venue-type,
+        .venue-meta,
+        #currentDate,
+        #weatherNow { color: #444 !important; }
+
+        .btn-primary {
+            background: #111 !important;
+            color: #fff !important;
+        }
+        .btn-secondary,
+        .btn-filter,
+        .btn-gps {
+            background: #fff !important;
+            color: #111 !important;
+            border: 1px solid rgba(0,0,0,0.2) !important;
+        }
+        .btn-secondary.active,
+        .btn-filter.active,
+        .btn-gps.active {
+            background: #111 !important;
+            color: #fff !important;
+            border-color: #111 !important;
+        }
+
+        .venue-item { border-left-color: #d6d6d6 !important; }
+        .venue-item.sunny { border-left-color: #111 !important; background: rgba(0,0,0,0.04) !important; }
+        .venue-item.shaded { background: rgba(0,0,0,0.02) !important; }
+        .filter-info.active { background: rgba(0,0,0,0.06) !important; color: #111 !important; }
+
+        #weatherPanel {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0,0,0,0.12);
+        }
+        #weatherNow { font-size: 0.88em; margin-bottom: 8px; }
+        #weatherForecast { display: flex; flex-wrap: wrap; gap: 6px; }
+        .wx-chip {
+            font-size: 0.76em;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 999px;
+            padding: 4px 8px;
+            color: #222;
+        }
+
+
+        #controlPanel {
+            min-width: 260px !important;
+            width: 260px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom: 12px; }
+        .panel-collapse {
+            border: 1px solid rgba(0,0,0,0.18);
+            background: #fff;
+            color: #111;
+            width: 34px; height: 34px; border-radius: 999px; cursor: pointer;
+        }
+        #controlPanel.collapsed { width: 52px !important; min-width: 52px !important; padding: 12px 8px !important; overflow: hidden; }
+        #controlPanel.collapsed .panel-head > div,
+        #controlPanel.collapsed .control-group,
+        #controlPanel.collapsed #statsPanel,
+        #controlPanel.collapsed #weatherPanel { display:none; }
+        #controlPanel.collapsed .panel-collapse { transform: rotate(180deg); margin: 0 auto; display:block; }
+
+        #venueModal {
+            align-items: flex-end;
+            justify-content: flex-start;
+            padding: 20px;
+            background: transparent !important;
+            pointer-events: none;
+        }
+        #venueModal.active { display:flex; }
+        #venueModal .modal-content {
+            pointer-events: all;
+            width: 420px;
+            max-width: calc(100vw - 32px);
+            border-radius: 20px !important;
+            overflow: hidden;
+        }
+        .modal-header { padding: 12px 16px !important; }
+        .modal-header h2 { color: #111 !important; }
+        .modal-close { color: #444 !important; }
+        .modal-body { padding: 0 16px 16px !important; }
+        .modal-image-wrap { margin: 0 -16px 14px; height: 190px; overflow: hidden; background: #f2f2f2; }
+        .modal-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .sunny-pill { display:inline-block; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 999px; background:#f4f4f4; margin-bottom:8px; }
+        .sunny-pill.sunny { background: #e8f7eb; color:#116329; }
+        .sunny-pill.shaded { background: #f1f1f1; color:#444; }
+        .modal-section h3 { color:#111 !important; text-transform:none !important; letter-spacing:0 !important; font-size: 1.2em !important; margin-bottom:6px !important; }
+        .modal-meta-row { display:flex; gap:8px; align-items:flex-start; color:#333; margin-top:8px; font-size:0.92em; }
+        #modalWebsite { color:#111 !important; text-decoration: underline; }
 
         @media (max-width: 768px) {
-            #controlPanel { left: 10px; top: 10px; min-width: 280px; padding: 15px; }
+            #controlPanel { left: 10px; top: 10px; min-width: 230px; width: 230px; padding: 12px; }
             #venueList { right: 10px; top: 10px; width: 280px; }
             #legend { left: 10px; bottom: 10px; padding: 10px 15px; }
         }
@@ -186,7 +301,6 @@
 </head>
 <body>
     <div id="cesiumContainer"></div>
-
     <div id="loadingOverlay">
         <div class="loader"></div>
         <p id="loadingText">Loading Lightmonths...</p>
@@ -203,8 +317,13 @@
     </div>
 
     <div id="controlPanel" style="display: none;">
-        <h1>☀️ Lightmonths</h1>
-        <p class="subtitle">Find sunny outdoor spots in real-time</p>
+        <div class="panel-head">
+            <div>
+                <h1>☀️ Lightmonths</h1>
+                <p class="subtitle">Find sunny outdoor spots</p>
+            </div>
+            <button class="panel-collapse" onclick="toggleControlPanel()" aria-label="Toggle controls">◀</button>
+        </div>
         <div class="control-group">
             <label>Time of Day</label>
             <input type="range" id="timeSlider" min="5" max="21" step="0.25" value="12">
@@ -231,6 +350,11 @@
             <div class="stat"><span class="stat-label">Shaded venues:</span><span class="stat-value shaded" id="shadedCount">0</span></div>
             <div class="stat" id="distanceStat" style="display: none;"><span class="stat-label">Nearest sunny:</span><span class="stat-value" id="nearestDistance" style="color: #66b3ff;">--</span></div>
         </div>
+        <div id="weatherPanel">
+            <div class="weather-title">Live Weather</div>
+            <div id="weatherNow">Loading Melbourne weather…</div>
+            <div id="weatherForecast"></div>
+        </div>
     </div>
 
     <div id="venueList" style="display: none;">
@@ -244,11 +368,11 @@
 
     <div id="legend" style="display: none;">
         <h3>LEGEND</h3>
-        <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot with light beam</span></div>
+        <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot</span></div>
         <div class="legend-item"><div class="legend-color shaded"></div><span>Currently shaded</span></div>
         <div style="margin-top: 10px; font-size: 0.8em; color: #888;">
-            ✨ Golden beams show sunlight<br>
-            🔆 Brighter = stronger sun
+            ☀️ Sunny venues are highlighted in the list<br>
+            🌥️ Shaded venues are muted
         </div>
         <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
             <h3 style="margin-bottom: 8px;">MAP CONTROLS</h3>
@@ -263,9 +387,16 @@
                 <button class="modal-close" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body">
-                <div class="modal-section"><h3>📍 Location</h3><div class="venue-address" id="modalAddress">Address</div><div class="venue-description" id="modalDescription">Description</div></div>
-                <div class="modal-section"><h3>🕐 Opening Hours</h3><div id="modalHours" style="color: #ccc; font-size: 0.9em;">Hours not available</div></div>
-                <div class="modal-section"><h3>🔗 Website</h3><a href="#" id="modalWebsite" target="_blank" style="color: #FFD700; text-decoration: none; font-size: 0.9em;">Visit website →</a></div>
+                <div class="modal-image-wrap"><img id="modalHeroImage" alt="Venue photo"></div>
+                <div class="modal-section">
+                    <div class="sunny-pill" id="modalSunState">Checking sunlight…</div>
+                    <h3 id="modalVenueTitle">Venue details</h3>
+                    <div class="venue-address" id="modalAddress">Address</div>
+                    <div class="venue-description" id="modalDescription">Description</div>
+                    <div class="modal-meta-row"><span>🕐</span><div id="modalHours">Hours not available</div></div>
+                    <div class="modal-meta-row"><span>☀️</span><div id="modalSunnyDuration">Calculating sunny window…</div></div>
+                    <div class="modal-meta-row"><span>🔗</span><a href="#" id="modalWebsite" target="_blank">Visit website</a></div>
+                </div>
                 <div class="modal-section"><h3>📸 Your Photos</h3><div class="photo-gallery" id="photoGallery"></div><input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhotoUpload(event)"></div>
             </div>
         </div>
@@ -297,9 +428,9 @@
 
         let viewer = null, venueEntities = [], isPlaying = false, animationInterval = null, currentTimeHours = 12;
         let sunnyFilterActive = false, nearMeActive = false, userLocation = null;
-        let sunBeamEntities = []; // Store sun beam effects
         let glowAnimationFrame = null;
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDDXTr49B5gTQ3oBdFssu7dRUrprfA0jbc';
+        const MELBOURNE_COORDS = { lat: -37.8136, lng: 144.9631 };
 
         // PWA Install prompt
         let deferredPrompt = null;
@@ -401,6 +532,8 @@
                 updateLoadingText('Adding venues...');
                 addVenueMarkers();
                 setCurrentTime();
+                initWeatherForecast();
+                setInterval(initWeatherForecast, 10 * 60 * 1000);
                 document.getElementById('timeSlider').addEventListener('input', e => setTime(parseFloat(e.target.value)));
 
                 document.getElementById('loadingOverlay').style.display = 'none';
@@ -418,49 +551,10 @@
                 // Main venue marker
                 const entity = viewer.entities.add({
                     name: v.name, position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
-                    point: { pixelSize: 14, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                    point: { pixelSize: 14, color: Cesium.Color.fromCssColorString('#111111'), outlineColor: Cesium.Color.WHITE, outlineWidth: 2, heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY },
                     label: { text: v.name, font: '12px sans-serif', fillColor: Cesium.Color.WHITE, outlineColor: Cesium.Color.BLACK, outlineWidth: 2, style: Cesium.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -20), heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY, scaleByDistance: new Cesium.NearFarScalar(100, 1.0, 5000, 0.3) }
                 });
 
-                // Sun beam - golden light cylinder from sky
-                const sunBeam = viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height + 75),
-                    cylinder: {
-                        length: 150,
-                        topRadius: 8,
-                        bottomRadius: 25,
-                        material: Cesium.Color.GOLD.withAlpha(0.15),
-                        outline: false,
-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
-                    },
-                    show: true
-                });
-
-                // Ground glow - ellipse at venue level
-                const groundGlow = viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
-                    ellipse: {
-                        semiMajorAxis: 20,
-                        semiMinorAxis: 20,
-                        material: Cesium.Color.GOLD.withAlpha(0.25),
-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
-                    },
-                    show: true
-                });
-
-                // Outer glow ring for pulsing effect
-                const glowRing = viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(v.lng, v.lat, v.height),
-                    ellipse: {
-                        semiMajorAxis: 30,
-                        semiMinorAxis: 30,
-                        material: Cesium.Color.GOLD.withAlpha(0.1),
-                        heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
-                    },
-                    show: true
-                });
-
-                sunBeamEntities.push({ sunBeam, groundGlow, glowRing, venue: v });
                 venueEntities.push({ entity, venue: v, isSunny: true, distance: null });
 
                 const d = document.createElement('div');
@@ -470,36 +564,6 @@
                 vc.appendChild(d);
             });
 
-            // Start the glow animation
-            startGlowAnimation();
-        }
-
-        // Animate the glow effect for sunny venues
-        function startGlowAnimation() {
-            let phase = 0;
-            function animate() {
-                phase += 0.03;
-                const pulse = 0.5 + 0.5 * Math.sin(phase); // 0 to 1 pulsing
-
-                sunBeamEntities.forEach((item, i) => {
-                    if (venueEntities[i] && venueEntities[i].isSunny) {
-                        // Pulse the outer glow ring
-                        if (item.glowRing?.ellipse) {
-                            const size = 25 + 15 * pulse;
-                            item.glowRing.ellipse.semiMajorAxis = size;
-                            item.glowRing.ellipse.semiMinorAxis = size;
-                            item.glowRing.ellipse.material = Cesium.Color.GOLD.withAlpha(0.08 + 0.07 * pulse);
-                        }
-                        // Pulse the sun beam opacity
-                        if (item.sunBeam?.cylinder) {
-                            item.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.1 * pulse);
-                        }
-                    }
-                });
-
-                glowAnimationFrame = requestAnimationFrame(animate);
-            }
-            animate();
         }
 
         function flyToVenue(i) {
@@ -535,25 +599,7 @@
                 item.isSunny = prob > rand && sunUp;
 
                 // Update marker color
-                if (item.entity?.point) item.entity.point.color = item.isSunny ? Cesium.Color.GOLD : Cesium.Color.GRAY;
-
-                // Update sun beam visibility and intensity
-                if (sunBeamEntities[i]) {
-                    const beamData = sunBeamEntities[i];
-                    const showEffects = item.isSunny && sunUp;
-
-                    beamData.sunBeam.show = showEffects;
-                    beamData.groundGlow.show = showEffects;
-                    beamData.glowRing.show = showEffects;
-
-                    // Adjust beam intensity based on sun position
-                    if (showEffects && beamData.sunBeam.cylinder) {
-                        beamData.sunBeam.cylinder.material = Cesium.Color.GOLD.withAlpha(0.1 + 0.15 * sunIntensity);
-                    }
-                    if (showEffects && beamData.groundGlow.ellipse) {
-                        beamData.groundGlow.ellipse.material = Cesium.Color.GOLD.withAlpha(0.15 + 0.2 * sunIntensity);
-                    }
-                }
+                if (item.entity?.point) item.entity.point.color = item.isSunny ? Cesium.Color.fromCssColorString('#111111') : Cesium.Color.fromCssColorString('#8f8f8f');
 
                 const d = document.getElementById('venue-'+i);
                 if (d) {
@@ -752,21 +798,9 @@
                 if (shouldHide) {
                     el.classList.add('hidden');
                     if (item.entity) item.entity.show = false;
-                    // Hide sun effects too
-                    if (sunBeamEntities[i]) {
-                        sunBeamEntities[i].sunBeam.show = false;
-                        sunBeamEntities[i].groundGlow.show = false;
-                        sunBeamEntities[i].glowRing.show = false;
-                    }
                 } else {
                     el.classList.remove('hidden');
                     if (item.entity) item.entity.show = true;
-                    // Show sun effects if venue is sunny
-                    if (sunBeamEntities[i] && item.isSunny) {
-                        sunBeamEntities[i].sunBeam.show = true;
-                        sunBeamEntities[i].groundGlow.show = true;
-                        sunBeamEntities[i].glowRing.show = true;
-                    }
                 }
             });
 
@@ -818,19 +852,60 @@
         }
 
         function toggleVenueList() { document.getElementById('venueList').classList.toggle('collapsed'); }
+        function toggleControlPanel() { document.getElementById('controlPanel').classList.toggle('collapsed'); }
 
         let currentVenueIndex = null;
+
+        function isVenueSunnyAtHour(index, h) {
+            const venue = venues[index];
+            const sunUp = h >= 6 && h <= 20;
+            if (!sunUp) return false;
+            const high = h >= 10 && h <= 16, morn = h >= 6 && h < 10, eve = h > 16 && h <= 20;
+            const roof = venue.outdoorType === 'rooftop', elev = venue.height > 10, water = venue.outdoorType === 'waterfront', lane = venue.outdoorType === 'laneway';
+            let prob = 0;
+            if (high) prob = roof ? 0.98 : water ? 0.90 : elev ? 0.85 : lane ? 0.40 : 0.70;
+            else if (morn) prob = roof ? 0.85 : water ? 0.75 : elev ? 0.65 : lane ? 0.20 : 0.50;
+            else if (eve) prob = roof ? 0.80 : water ? 0.70 : elev ? 0.60 : lane ? 0.15 : 0.45;
+            const rand = Math.abs((Math.sin(index * 12.9898 + 43758.5453) * 43758.5453) % 1);
+            return prob > rand;
+        }
+
+        function getSunnyDurationText(index) {
+            const nowSunny = isVenueSunnyAtHour(index, currentTimeHours);
+            if (!nowSunny) return 'Currently shaded at this time.';
+            let slots = 0;
+            for (let h = currentTimeHours; h <= 21; h += 0.25) {
+                if (isVenueSunnyAtHour(index, h)) slots++;
+                else break;
+            }
+            const mins = Math.round(slots * 15);
+            const hours = Math.floor(mins / 60);
+            const rem = mins % 60;
+            if (hours === 0) return `Sunny for about ${rem} more min`;
+            if (rem === 0) return `Sunny for about ${hours}h more`;
+            return `Sunny for about ${hours}h ${rem}m more`;
+        }
+
         function openVenueModal(i) {
             currentVenueIndex = i;
             const v = venues[i];
             document.getElementById('modalVenueName').textContent = v.name;
             document.getElementById('modalVenueType').textContent = v.type + ' • ' + v.outdoorType;
+            document.getElementById('modalVenueTitle').textContent = v.name;
             document.getElementById('modalAddress').textContent = v.address || 'Address not available';
             document.getElementById('modalDescription').textContent = v.description;
             document.getElementById('modalHours').textContent = v.hours || 'Hours not available';
+            document.getElementById('modalSunnyDuration').textContent = getSunnyDurationText(i);
+            const stateEl = document.getElementById('modalSunState');
+            const currentlySunny = isVenueSunnyAtHour(i, currentTimeHours);
+            stateEl.className = 'sunny-pill ' + (currentlySunny ? 'sunny' : 'shaded');
+            stateEl.textContent = currentlySunny ? 'Currently Sunny' : 'Currently Shaded';
             const ws = document.getElementById('modalWebsite');
-            if (v.website) { ws.href = v.website; ws.textContent = v.website.replace('https://','').replace('www.','').replace(/\/$/,'') + ' →'; ws.style.display = 'inline'; }
+            if (v.website) { ws.href = v.website; ws.textContent = v.website.replace('https://','').replace('www.','').replace(/\/$/,''); ws.style.display = 'inline'; }
             else ws.style.display = 'none';
+            const photos = getStoredPhotos();
+            const hero = document.getElementById('modalHeroImage');
+            hero.src = photos[i]?.[0] || 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f7f7f7"/><stop offset="1" stop-color="#ececec"/></linearGradient></defs><rect width="800" height="420" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#777" font-family="sans-serif" font-size="34">${v.name}</text></svg>`);
             loadVenuePhotos(i);
             document.getElementById('venueModal').classList.add('active');
         }
@@ -889,7 +964,45 @@
             if (photos[vi]) { photos[vi].splice(pi, 1); savePhotos(photos); loadVenuePhotos(vi); }
         }
 
+        async function initWeatherForecast() {
+            const nowEl = document.getElementById('weatherNow');
+            const fcEl = document.getElementById('weatherForecast');
+            if (!nowEl || !fcEl) return;
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${MELBOURNE_COORDS.lat}&longitude=${MELBOURNE_COORDS.lng}&current=temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m&hourly=temperature_2m,precipitation_probability,cloud_cover&forecast_days=1&timezone=Australia%2FMelbourne`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Weather API unavailable');
+                const data = await res.json();
+                const c = data.current;
+                nowEl.textContent = `${Math.round(c.temperature_2m)}°C • ${Math.round(c.cloud_cover)}% cloud • ${Math.round(c.wind_speed_10m)} km/h wind`;
+
+                const hours = data.hourly.time || [];
+                const temps = data.hourly.temperature_2m || [];
+                const rain = data.hourly.precipitation_probability || [];
+
+                const currentHour = new Date().getHours();
+                const slices = [];
+                for (let i = 0; i < hours.length; i++) {
+                    const hh = Number(hours[i].slice(11, 13));
+                    if (hh >= currentHour && slices.length < 4) {
+                        slices.push({ hh, temp: temps[i], rain: rain[i] });
+                    }
+                }
+
+                fcEl.innerHTML = slices.map(s => {
+                    const label = s.hh === 12 ? '12pm' : (s.hh > 12 ? `${s.hh - 12}pm` : `${s.hh}am`);
+                    return `<span class="wx-chip"><b>${label}</b> ${Math.round(s.temp)}° ${Math.round(s.rain)}% rain</span>`;
+                }).join('');
+            } catch (e) {
+                nowEl.textContent = 'Unable to load live weather right now.';
+                fcEl.innerHTML = '<span class="wx-chip">Check connection and refresh.</span>';
+            }
+        }
+
         window.onload = init;
     </script>
+
 </body>
 </html>

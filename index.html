@@ -292,6 +292,92 @@
         .modal-meta-row { display:flex; gap:8px; align-items:flex-start; color:#333; margin-top:8px; font-size:0.92em; }
         #modalWebsite { color:#111 !important; text-decoration: underline; }
 
+
+        /* Minimal light theme + city-wide sun overlay */
+        #sunOverlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        #sunDisc {
+            position: absolute;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(255,213,110,0.45) 0%, rgba(255,213,110,0.18) 35%, rgba(255,213,110,0.08) 58%, rgba(255,213,110,0) 72%);
+            filter: blur(4px);
+            transition: top 0.6s ease, left 0.6s ease, opacity 0.6s ease;
+        }
+
+        #controlPanel,
+        #venueList,
+        #legend,
+        #venueModal .modal-content,
+        #installBanner {
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #111 !important;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.12);
+            backdrop-filter: blur(8px);
+        }
+
+        #controlPanel h1,
+        .venue-header-title,
+        #legend h3,
+        .stat-value.sunny,
+        #weatherPanel .weather-title { color: #111 !important; }
+
+        #controlPanel .subtitle,
+        .stat-label,
+        .venue-type,
+        .venue-meta,
+        #currentDate,
+        #weatherNow { color: #444 !important; }
+
+        .btn-primary {
+            background: #111 !important;
+            color: #fff !important;
+        }
+        .btn-secondary,
+        .btn-filter,
+        .btn-gps {
+            background: #fff !important;
+            color: #111 !important;
+            border: 1px solid rgba(0,0,0,0.2) !important;
+        }
+        .btn-secondary.active,
+        .btn-filter.active,
+        .btn-gps.active {
+            background: #111 !important;
+            color: #fff !important;
+            border-color: #111 !important;
+        }
+
+        .venue-item { border-left-color: #d6d6d6 !important; }
+        .venue-item.sunny { border-left-color: #111 !important; background: rgba(0,0,0,0.04) !important; }
+        .venue-item.shaded { background: rgba(0,0,0,0.02) !important; }
+        .filter-info.active { background: rgba(0,0,0,0.06) !important; color: #111 !important; }
+
+        #weatherPanel {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(0,0,0,0.12);
+        }
+        #weatherNow { font-size: 0.88em; margin-bottom: 8px; }
+        #weatherForecast { display: flex; flex-wrap: wrap; gap: 6px; }
+        .wx-chip {
+            font-size: 0.76em;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 999px;
+            padding: 4px 8px;
+            color: #222;
+        }
+
         @media (max-width: 768px) {
             #controlPanel { left: 10px; top: 10px; min-width: 230px; width: 230px; padding: 12px; }
             #venueList { right: 10px; top: 10px; width: 280px; }
@@ -301,6 +387,10 @@
 </head>
 <body>
     <div id="cesiumContainer"></div>
+    <div id="sunOverlay" aria-hidden="true">
+        <div id="sunDisc"></div>
+    </div>
+
     <div id="loadingOverlay">
         <div class="loader"></div>
         <p id="loadingText">Loading Lightmonths...</p>
@@ -371,8 +461,8 @@
         <div class="legend-item"><div class="legend-color sunny"></div><span>Sunny spot</span></div>
         <div class="legend-item"><div class="legend-color shaded"></div><span>Currently shaded</span></div>
         <div style="margin-top: 10px; font-size: 0.8em; color: #888;">
-            ☀️ Sunny venues are highlighted in the list<br>
-            🌥️ Shaded venues are muted
+            ☀️ City-wide sun glow shows time of day<br>
+            🔆 Brighter glow = stronger sun
         </div>
         <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
             <h3 style="margin-bottom: 8px;">MAP CONTROLS</h3>
@@ -614,7 +704,21 @@
             });
             document.getElementById('sunnyCount').textContent = sunny;
             document.getElementById('shadedCount').textContent = shaded;
+            updateSunGraphicPosition(h, sunIntensity);
             updateNearestSunny();
+        }
+
+        function updateSunGraphicPosition(hour, intensity) {
+            const disc = document.getElementById('sunDisc');
+            if (!disc) return;
+            const dayProgress = Math.max(0, Math.min(1, (hour - 6) / 14));
+            const x = 8 + (dayProgress * 84);
+            const yArc = Math.sin(dayProgress * Math.PI);
+            const y = 72 - (yArc * 52);
+            const opacity = hour >= 6 && hour <= 20 ? (0.25 + intensity * 0.55) : 0.08;
+            disc.style.left = x + '%';
+            disc.style.top = y + '%';
+            disc.style.opacity = opacity.toFixed(2);
         }
 
         // Update atmosphere/sky based on time of day
